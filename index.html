@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+  <title>Snake Game - Play with lynxniee</title>
+  <style>
+    body {
+      background: url('van.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      font-size: 50px;
+      color: #ff69b4;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    #startButton {
+      font-size: 24px;
+      padding: 10px 20px;
+      background-color: #ff69b4;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    #uploadSection {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+     background: rgba(255, 255, 255, 0.8);
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    #uploadSection p {
+  font-size: 28px;
+  color: #ff69b4;
+  font-family: 'Pacifico', cursive;
+  margin-bottom: 20px;
+}
+
+#uploadFoodImage {
+  padding: 10px;
+  border: 2px dashed #ff69b4;
+  border-radius: 10px;
+  cursor: pointer;
+  background-color: #fff;
+  transition: all 0.3s ease;
+}
+
+#uploadFoodImage:hover {
+  background-color: #ffe6f2;
+}
+#playButton {
+  font-size: 20px;
+  padding: 10px 20px;
+  background-color: #32CD32;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+#playButton:hover {
+  background-color: #28a745;
+  transform: scale(1.1);
+}
+      
+    #gameContainer {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    canvas {
+      border: 2px solid #ff69b4;
+      background: url('rancute.webp') no-repeat center center;
+      background-size: cover;
+      display: block;
+      margin: 20px auto;
+    }
+    .game-over {
+      font-size: 40px;
+      color: red;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: blink 1s infinite;
+      display: none;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .control-row {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+    }
+    .control-button {
+      background-color: #ff69b4;
+      border: none;
+      color: white;
+      font-size: 30px;
+      padding: 10px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Play with lynxniee</h1>
+  <button id="startButton">Start Game</button>
+  <div id="uploadSection" style="display:none;">
+    <p style="font-size: 24px; color: #ff69b4;">Bạn chọn cho tui một ảnh đại diện của bạn đi</p>
+    <input type="file" id="uploadFoodImage" accept="image/*" style="margin: 20px;" />
+    <button id="playButton" style="display:none;">Play</button>
+    <button id="claimPrizeBtn" style="display:none; padding: 10px 20px; font-size: 18px; background-color: gold; border: none; border-radius: 5px; cursor: pointer;">
+      Nhận quà
+    </button>
+    
+  </div>
+
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <div class="game-over" id="gameOverText">Game Over</div>
+    <div class="controls">
+      <div class="control-row">
+        <button class="control-button" id="upButton">⬆️</button>
+      </div>
+      <div class="control-row">
+        <button class="control-button" id="leftButton">⬅️</button>
+        <button class="control-button" id="downButton">⬇️</button>
+        <button class="control-button" id="rightButton">➡️</button>
+      </div>
+    </div>
+  </div>
+<!-- Input để người chơi chọn ảnh -->
+
+  
+  <audio id="backgroundMusic" src="trasua.mp3" loop></audio>
+  <audio id="tutSound" src="click.mp3"></audio>
+  <audio id="eatSound" src="nhoam.m4a"></audio>
+
+  <script>
+    const startButton = document.getElementById('startButton');
+    
+    const uploadSection = document.getElementById('uploadSection');
+    const uploadFoodImage = document.getElementById('uploadFoodImage');
+    const playButton = document.getElementById('playButton');
+    const gameContainer = document.getElementById('gameContainer');
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gameOverText = document.getElementById('gameOverText');
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    const tutSound = document.getElementById('tutSound');
+    const eatSound = document.getElementById('eatSound');  // Lấy phần tử âm thanh
+    const winSound = new Audio('win.mp3');  // Âm thanh khi thắng
+    const loseSound = new Audio('gameovertone.mp3');  // Âm thanh khi thua
+
+    let snake = [{ x: 220, y: 220 }];
+    let direction = 'RIGHT';
+    let food = { x: 100, y: 100 };
+    let gameRunning = true;
+    let foodImage = null;
+    let foodCount = 0;  // Số lượng mồi đã ăn
+
+      // Khi nhấn nút Start
+      startButton.addEventListener('click', () => {
+      startButton.style.display = 'none'; // Ẩn nút Start
+      uploadSection.style.display = 'block';  // Hiện phần chọn ảnh
+    });
+
+    // Khi người chơi chọn ảnh mồi
+    uploadFoodImage.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          foodImage = new Image();
+          foodImage.src = e.target.result;
+          playButton.style.display = 'block'; // Hiện nút Play sau khi chọn ảnh
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+// Khi nhấn nút Play
+playButton.addEventListener('click', () => {
+      uploadSection.style.display = 'none';
+      gameContainer.style.display = 'flex';
+      backgroundMusic.play();
+      setInterval(gameLoop, 300);
+    });
+
+
+    document.getElementById('upButton').addEventListener('click', () => changeDirection('UP'));
+    document.getElementById('downButton').addEventListener('click', () => changeDirection('DOWN'));
+    document.getElementById('leftButton').addEventListener('click', () => changeDirection('LEFT'));
+    document.getElementById('rightButton').addEventListener('click', () => changeDirection('RIGHT'));
+
+    function changeDirection(newDirection) {
+      tutSound.play();
+      if (newDirection === 'UP' && direction !== 'DOWN') direction = 'UP';
+      if (newDirection === 'DOWN' && direction !== 'UP') direction = 'DOWN';
+      if (newDirection === 'LEFT' && direction !== 'RIGHT') direction = 'LEFT';
+      if (newDirection === 'RIGHT' && direction !== 'LEFT') direction = 'RIGHT';
+    }
+
+    const headImage = new Image();
+headImage.src = 'cute 2.jpeg'; // Đảm bảo bạn có ảnh này trong thư mục đúng
+
+function gameLoop() {
+  if (!gameRunning) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+// Vẽ câu hướng dẫn với màu sắc và viền quanh chữ
+ctx.font = 'bold 24px Comic Sans MS';
+ctx.fillStyle = 'red';  // Màu chữ
+ctx.strokeStyle = 'black'; // Màu viền
+ctx.lineWidth = 2;
+
+// Vẽ viền chữ
+ctx.strokeText('Ăn 10 con mồi là thắng rồi!', 10, 20);
+
+// Vẽ chữ màu bên trong
+ctx.fillText('Ăn 10 con mồi là thắng rồi!', 10, 20);
+
+// Hiển thị số đếm mồi bên dưới
+ctx.fillStyle = 'black';
+ctx.font = '20px Arial';
+ctx.fillText(`Score: ${foodCount}`, 10, 40);
+
+// Vẽ mồi
+if (foodImage) {
+        ctx.drawImage(foodImage, food.x, food.y, 40, 40);
+      } else {
+        ctx.fillStyle = 'blue';  // Mồi mặc định là màu xanh dương
+        ctx.fillRect(food.x, food.y, 40, 40);
+      }
+      // Di chuyển rắn
+      let head = { ...snake[0] };
+      if (direction === 'UP') head.y -= 20;
+      if (direction === 'DOWN') head.y += 20;
+      if (direction === 'LEFT') head.x -= 20;
+      if (direction === 'RIGHT') head.x += 20;
+      
+
+      // Kiểm tra va chạm tường
+      if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+        gameOver();
+        return;
+      }
+
+      // Kiểm tra ăn thức ăn
+      if (head.x === food.x && head.y === food.y) {
+        eatSound.play();  // Phát âm thanh khi ăn mồi
+        foodCount++;  // Tăng số đếm mồi
+        if (foodCount === 10) {
+      gameOver(true);  // Thắng khi ăn đủ 10 con mồi
+      return;
+    }
+    
+    // Tạo mồi mới ngẫu nhiên
+    food = {
+      x: Math.floor(Math.random() * 20) * 20,
+      y: Math.floor(Math.random() * 20) * 20
+    };
+    // Thêm đoạn kiểm tra số lượng mồi ở đây
+    if (foodCount >= 10) {
+      gameRunning = false;  // Dừng trò chơi
+      winSound.play();  // Phát âm thanh thắng
+      document.getElementById('claimPrizeBtn').style.display = 'block';  // Hiển thị nút "Nhận quà"
+    }
+  } else {
+    snake.pop();  // Xóa đuôi nếu không ăn mồi
+  }
+
+  snake.unshift(head);  // Thêm đầu mới
+
+      // Vẽ thân rắn
+  snake.slice(1).forEach(segment => {
+    ctx.fillStyle = 'darkgreen';
+    ctx.fillRect(segment.x, segment.y, 40, 40);
+  });
+// Vẽ đầu rắn với ảnh bo tròn
+ctx.save();
+  ctx.translate(head.x + 20, head.y +20); // Chuyển tâm vẽ về giữa ô đầu rắn
+  ctx.rotate({
+    'UP': -Math.PI / 2,
+    'DOWN': Math.PI / 2,
+    'LEFT': Math.PI,
+    'RIGHT': 0
+  }[direction]);
+
+  // Bo tròn ảnh
+  ctx.beginPath();
+  ctx.arc(0, 0, 20, 0, Math.PI * 2); // Vùng bo tròn với bán kính 10px
+  ctx.clip();
+
+   // Vẽ ảnh đầu rắn
+  ctx.drawImage(headImage, -20, -20, 40, 40);
+  ctx.restore();
+
+  
+}
+
+    function gameOver(won) {
+  gameRunning = false;
+  backgroundMusic.pause();
+  if (won) {
+    winSound.play();
+    gameOverText.innerHTML = "ố dè thắng rồi!";
+    gameOverText.style.color = "green";
+    claimPrizeBtn.style.display = "block";  // Hiện nút Nhận quà
+  } else {
+    loseSound.play();
+    gameOverText.innerHTML = "Ăn có 10 con cũng thua, Loser!";
+    gameOverText.style.color = "red";
+  }
+  gameOverText.style.display = "block";
+}
+
+    // roundRect function for rounded rectangles (canvas)
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+      this.beginPath();
+      this.moveTo(x + radius, y);
+      this.lineTo(x + width - radius, y);
+      this.quadraticCurveTo(x + width, y, x + width, y + radius);
+      this.lineTo(x + width, y + height - radius);
+      this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      this.lineTo(x + radius, y + height);
+      this.quadraticCurveTo(x, y + height, x, y + height - radius);
+      this.lineTo(x, y + radius);
+      this.quadraticCurveTo(x, y, x + radius, y);
+      this.closePath();
+    };
+  </script>
+</body>
+</html>
